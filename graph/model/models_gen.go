@@ -7,6 +7,10 @@ type NewTodo struct {
 	UserID string `json:"userId"`
 }
 
+type ResponseString struct {
+	String string `json:"string"`
+}
+
 type User struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
