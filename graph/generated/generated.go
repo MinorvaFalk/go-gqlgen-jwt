@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -263,13 +264,13 @@ type ResponseString {
   string: String!
 }
 
-type Query {
-  todos: [Todo!]!
-}
-
 input NewTodo {
   text: String!
   userId: String!
+}
+
+type Query {
+  todos: [Todo!]! @mustAuth(auth: true)
 }
 
 type Mutation {
@@ -492,8 +493,32 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Todos(rctx)
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Todos(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			auth, err := ec.unmarshalNBoolean2bool(ctx, true)
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.MustAuth == nil {
+				return nil, errors.New("directive mustAuth is not implemented")
+			}
+			return ec.directives.MustAuth(ctx, nil, directive0, auth)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.Todo); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/MinorvaFalk/go-gqlgen-jwt/graph/model.Todo`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)

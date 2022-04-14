@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/MinorvaFalk/go-gqlgen-jwt/graph"
@@ -29,7 +30,6 @@ func main() {
 	r := gin.Default()
 
 	r.Use(middleware.GinContextToContextMiddleware())
-	r.Use(middleware.JwtMiddleware)
 
 	r.POST("/query", graphqlHandler(middleware))
 	r.GET("/", playgroundHandler())
@@ -44,6 +44,19 @@ func graphqlHandler(middleware *middleware.Middlewares) gin.HandlerFunc {
 		Resolvers: &graph.Resolver{
 			Middleware: middleware,
 		},
+	}
+	c.Directives.MustAuth = func(ctx context.Context, obj interface{}, next graphql.Resolver, auth bool) (res interface{}, err error) {
+		gc, err := GinContextFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		checkAuth := middleware.JwtMiddlewareV2(gc)
+		if checkAuth != nil {
+			return nil, checkAuth
+		}
+
+		return next(ctx)
 	}
 
 	h := handler.NewDefaultServer(generated.NewExecutableSchema(c))

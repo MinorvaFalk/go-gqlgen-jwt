@@ -77,6 +77,35 @@ func (m *Middlewares) JwtMiddleware(c *gin.Context) {
 	c.Next()
 }
 
+func (m *Middlewares) JwtMiddlewareV2(c *gin.Context) error {
+	header := c.GetHeader("Authorization")
+	if !strings.Contains(header, "Bearer") {
+		return errors.New("invalid token supplied")
+	}
+
+	tokenString := header[len("Bearer "):]
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+
+		if method, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, errors.New("invalid token signature")
+		} else if method != jwt.SigningMethodRS256 {
+			return nil, errors.New("invalid token signature")
+		}
+
+		return m.jwtAuth.PublicKey, nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !token.Valid {
+		return err
+	}
+
+	return nil
+}
+
 func (m *Middlewares) GinContextToContextMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.WithValue(c.Request.Context(), ginContextKey, c)

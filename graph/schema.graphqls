@@ -20,13 +20,13 @@ type ResponseString {
   string: String!
 }
 
-type Query {
-  todos: [Todo!]!
-}
-
 input NewTodo {
   text: String!
   userId: String!
+}
+
+type Query {
+  todos: [Todo!]! @mustAuth(auth: true)
 }
 
 type Mutation {
