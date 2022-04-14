@@ -5,11 +5,15 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/MinorvaFalk/go-gqlgen-jwt/graph/generated"
 	"github.com/MinorvaFalk/go-gqlgen-jwt/graph/model"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
@@ -22,7 +26,28 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 	return todo, nil
 }
 
+func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.ResponseString, error) {
+	if username == "jon" && password == "test" {
+		token, err := r.Middleware.SignKey(username)
+		if err != nil {
+			return nil, &gqlerror.Error{
+				Path:    graphql.GetPath(ctx),
+				Message: "Internal Server Error",
+				Extensions: map[string]interface{}{
+					"code": http.StatusInternalServerError,
+				},
+			}
+		}
+
+		return &model.ResponseString{String: token}, nil
+	}
+
+	return nil, errors.New("invalid user")
+}
+
 func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+	// gc, err := r.GinContextFromContext(ctx)
+
 	return r.todos, nil
 }
 

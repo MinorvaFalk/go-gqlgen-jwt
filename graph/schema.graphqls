@@ -2,6 +2,8 @@
 #
 # https://gqlgen.com/getting-started/
 
+directive @mustAuth(auth: Boolean!) on FIELD_DEFINITION
+
 type Todo {
   id: ID!
   text: String!
@@ -14,8 +16,8 @@ type User {
   name: String!
 }
 
-type Query {
-  todos: [Todo!]!
+type ResponseString {
+  string: String!
 }
 
 input NewTodo {
@@ -23,6 +25,11 @@ input NewTodo {
   userId: String!
 }
 
+type Query {
+  todos: [Todo!]! @mustAuth(auth: true)
+}
+
 type Mutation {
   createTodo(input: NewTodo!): Todo!
+  login(username: String!, password: String!): ResponseString!
 }
